@@ -1,94 +1,194 @@
-// Titles: https://omdbapi.com/?s=thor&page=1&apikey=fc1fef96
-// details: http://www.omdbapi.com/?i=tt3896198&apikey=fc1fef96
 
-const movieSearchBox = document.getElementById('movie-search-box');
-const searchList = document.getElementById('search-list');
-const resultGrid = document.getElementById('result-grid');
 
-// load movies from API
-async function loadMovies(searchTerm){
-    const URL = `http://www.omdbapi.com/?s=${searchTerm}&page=1&apikey=c02a2f61`;
-    const res = await fetch(`${URL}`);
+const key = '48aa722f';
+
+var searchInput = document.getElementById('Input');
+var displaySearchList = document.getElementsByClassName('fav-container');
+
+fetch('http://www.omdbapi.com/?i=tt3896198&apikey=48aa722f')
+    .then(res => res.json())
+    .then(data => console.log(data));
+
+// Upon keypress - function findMovies is initiated
+searchInput.addEventListener('input', findMovies);
+
+
+async function singleMovie() {
+    // Finding ID of the movie from the URL
+    var urlQueryParams = new URLSearchParams(window.location.search);
+    var id = urlQueryParams.get('id')
+    console.log(id);
+    const url = `https://www.omdbapi.com/?i=${id}&apikey=${key}`
+    const res = await fetch(`${url}`);
     const data = await res.json();
-    // console.log(data.Search);
-    if(data.Response == "True") displayMovieList(data.Search);
-}
+    console.log(data);
+    console.log(url);
 
-function findMovies(){
-    let searchTerm = (movieSearchBox.value).trim();
-    if(searchTerm.length > 0){
-        searchList.classList.remove('hide-search-list');
-        loadMovies(searchTerm);
-    } else {
-        searchList.classList.add('hide-search-list');
-    }
-}
+    // Making the output html by string interpolition
+    var output = `
 
-function displayMovieList(movies){
-    searchList.innerHTML = "";
-    for(let idx = 0; idx < movies.length; idx++){
-        let movieListItem = document.createElement('div');
-        movieListItem.dataset.id = movies[idx].imdbID; // setting movie id in  data-id
-        movieListItem.classList.add('search-list-item');
-        if(movies[idx].Poster != "N/A")
-            moviePoster = movies[idx].Poster;
-        else 
-            moviePoster = "image_not_found.png";
-
-        movieListItem.innerHTML = `
-        <div class = "search-item-thumbnail">
-            <img src = "${moviePoster}">
-        </div>
-        <div class = "search-item-info">
-            <h3>${movies[idx].Title}</h3>
-            <p>${movies[idx].Year}</p>
-        </div>
-        `;
-        searchList.appendChild(movieListItem);
-    }
-    loadMovieDetails();
-}
-
-function loadMovieDetails(){
-    const searchListMovies = searchList.querySelectorAll('.search-list-item');
-    searchListMovies.forEach(movie => {
-        movie.addEventListener('click', async () => {
-            // console.log(movie.dataset.id);
-            searchList.classList.add('hide-search-list');
-            movieSearchBox.value = "";
-            const result = await fetch(`http://www.omdbapi.com/?i=${movie.dataset.id}&apikey=fc1fef96`);
-            const movieDetails = await result.json();
-            // console.log(movieDetails);
-            displayMovieDetails(movieDetails);
-        });
-    });
-}
-
-function displayMovieDetails(details){
-    resultGrid.innerHTML = `
-    <div class = "movie-poster">
-        <img src = "${(details.Poster != "N/A") ? details.Poster : "image_not_found.png"}" alt = "movie poster">
+    <div class="movie-poster">
+        <img src=${data.Poster} alt="Movie Poster">
     </div>
-    <div class = "movie-info">
-        <h3 class = "movie-title">${details.Title}</h3>
-        <ul class = "movie-misc-info">
-            <li class = "year">Year: ${details.Year}</li>
-            <li class = "rated">Ratings: ${details.Rated}</li>
-            <li class = "released">Released: ${details.Released}</li>
+    <div class="movie-details">
+        <div class="details-header">
+            <div class="dh-ls">
+                <h2>${data.Title}</h2>
+            </div>
+            <div class="dh-rs">
+                <i class="fa-solid fa-bookmark" onClick=addTofavorites('${id}') style="cursor: pointer;"></i>
+            </div>
+        </div>
+        <span class="italics-text"><i>${data.Year} &#x2022; ${data.Country} &#x2022; Rating - <span
+                    style="font-size: 18px; font-weight: 600;">${data.imdbRating}</span>/10 </i></span>
+        <ul class="details-ul">
+            <li><strong>Actors: </strong>${data.Actors}</li>
+            <li><strong>Director: </strong>${data.Director}</li>
+            <li><strong>Writers: </strong>${data.Writer}</li>
         </ul>
-        <p class = "genre"><b>Genre:</b> ${details.Genre}</p>
-        <p class = "writer"><b>Writer:</b> ${details.Writer}</p>
-        <p class = "actors"><b>Actors: </b>${details.Actors}</p>
-        <p class = "plot"><b>Plot:</b> ${details.Plot}</p>
-        <p class = "language"><b>Language:</b> ${details.Language}</p>
-        <p class = "awards"><b><i class = "fas fa-award"></i></b> ${details.Awards}</p>
-    </div>
-    `;
+        <ul class="details-ul">
+            <li><strong>Genre: </strong>${data.Genre}</li>
+            <li><strong>Release Date: </strong>${data.DVD}</li>
+            <li><strong>Box Office: </strong>${data.BoxOffice}</li>
+            <li><strong>Movie Runtime: </strong>${data.Runtime}</li>
+        </ul>
+        <p style="font-size: 14px; margin-top:10px;">${data.Plot}</p>
+        <p style="font-size: 15px; font-style: italic; color: #222; margin-top: 10px;">
+            <i class="fa-solid fa-award"></i>
+            &thinsp; ${data.Awards}
+        </p>
+    </div> 
+    `
+    // Appending the output
+    document.querySelector('.movie-container').innerHTML = output
+
+}
+
+async function addTofavorites(id) {
+    console.log("fav-item", id);
+
+    localStorage.setItem(Math.random().toString(36).slice(2, 7), id);// math.random for the unique key and value pair
+    alert('Movie Added to Watchlist!');
+}
+
+//Removing the movie from the favorites list  and also from the localstorage
+async function removeFromfavorites(id) {
+    console.log(id);
+    for (i in localStorage) {
+        // If the ID passed as argument matches with value associated with key, then removing it 
+        if (localStorage[i] == id) {
+            localStorage.removeItem(i)
+            break;
+        }
+    }
+    //Alerting the user and refreshing the page
+    alert('Movie Removed from Watchlist');
+    window.location.replace('favorite.html');
+}
+
+//Displaying the movie list on the search page according to the user list
+async function displayMovieList(movies) {
+    var output = '';
+    //Traversing over the movies list which is passed as an argument to our function
+    for (i of movies) {
+
+        var img = '';
+        if (i.Poster != 'N/A') {
+            img = i.Poster;
+        }
+        else {
+            img = 'img/blank-poster.webp';
+        }
+        var id = i.imdbID;
+
+        //Appending the output through string interpolition
+        output += `
+
+        <div class="fav-item">
+            <div class="fav-poster">
+            <a href="movie.html?id=${id}"><img src=${img} alt="Favourites Poster"></a>
+            </div>
+            <div class="fav-details">
+                <div class="fav-details-box">
+                    <div>
+                        <p class="fav-movie-name"><a href="movie.html?id=${id}">${i.Title}</a></p>
+                        <p class="fav-movie-rating"><a href="movie.html?id=${id}">${i.Year}</a></p>
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-bookmark" style="cursor:pointer;" onClick=addTofavorites('${id}')></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+       `
+    }
+    //Appending this to the movie-display class of our html page
+    document.querySelector('.fav-container').innerHTML = output;
+    console.log("here is movie list ..", movies);
 }
 
 
-window.addEventListener('click', (event) => {
-    if(event.target.className != "form-control"){
-        searchList.classList.add('hide-search-list');
+//When the user is searching for the movie then a list of the related movie will be displayed and that list is fetched
+async function findMovies() {
+    const url = `https://www.omdbapi.com/?s=${(searchInput.value).trim()}&page=1&apikey=${key}`
+    const res = await fetch(`${url}`);
+    const data = await res.json();
+
+    if (data.Search) {
+        //Calling the function to display list of the movies related to the user search
+        displayMovieList(data.Search)
     }
-});
+}
+
+//Favorites movies are loaded on to the fav page from localstorage
+async function favoritesMovieLoader() {
+
+    var output = ''
+    //Traversing over all the movies in the localstorage
+    for (i in localStorage) {
+        var id = localStorage.getItem(i);
+        if (id != null) {
+            //Fetching the movie through id 
+            const url = `https://www.omdbapi.com/?i=${id}&plot=full&apikey=${key}`
+            const res = await fetch(`${url}`);
+            const data = await res.json();
+            console.log(data);
+
+
+            var img = ''
+            if (data.Poster) {
+                img = data.Poster
+            }
+            else { img = data.Title }
+            var Id = data.imdbID;
+            //Adding all the movie html in the output using interpolition
+            output += `
+
+        <div class="fav-item">
+            <div class="fav-poster">
+                <a href="movie.html?id=${id}"><img src=${img} alt="Favourites Poster"></a>
+            </div>
+            <div class="fav-details">
+                <div class="fav-details-box">
+                    <div>
+                        <p class="fav-movie-name">${data.Title}</p>
+                        <p class="fav-movie-rating">${data.Year} &middot; <span
+                                style="font-size: 15px; font-weight: 600;">${data.imdbRating}</span>/10</p>
+                    </div>
+                    <div style="color: maroon">
+                        <i class="fa-solid fa-trash" style="cursor:pointer;" onClick=removeFromfavorites('${Id}')></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+       `;
+        }
+
+    }
+    //Appending the html to the movie-display class in favorites page 
+    document.querySelector('.fav-container').innerHTML = output;
+}
+
+
